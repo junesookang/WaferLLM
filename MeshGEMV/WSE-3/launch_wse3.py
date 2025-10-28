@@ -6,8 +6,8 @@ import argparse
 import json
 import struct
 
-from cerebras.sdk.client import SdkRuntime, sdk_utils
-from cerebras.appliance.pb.sdk.sdk_common_pb2 import MemcpyDataType, MemcpyOrder
+from cerebras.sdk.client import SdkRuntime, sdk_utils  # type: ignore
+from cerebras.appliance.pb.sdk.sdk_common_pb2 import MemcpyDataType, MemcpyOrder  # type: ignore
 
 out_path = "compile_out"
 

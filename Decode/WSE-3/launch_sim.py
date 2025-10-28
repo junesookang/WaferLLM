@@ -4,10 +4,10 @@ import struct
 import argparse
 import numpy as np
 
-from cerebras.sdk.sdk_utils import input_array_to_u32, memcpy_view, calculate_cycles
-from cerebras.sdk.debug.debug_util import debug_util
-from cerebras.sdk.runtime.sdkruntimepybind import SdkRuntime
-from cerebras.sdk.runtime.sdkruntimepybind import MemcpyDataType, MemcpyOrder
+from cerebras.sdk.sdk_utils import input_array_to_u32, memcpy_view, calculate_cycles  # type: ignore
+from cerebras.sdk.debug.debug_util import debug_util  # type: ignore
+from cerebras.sdk.runtime.sdkruntimepybind import SdkRuntime  # type: ignore
+from cerebras.sdk.runtime.sdkruntimepybind import MemcpyDataType, MemcpyOrder  # type: ignore
 
 def float_to_hex(f):
     return hex(struct.unpack("<I", struct.pack("<f", f))[0])

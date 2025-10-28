@@ -1,7 +1,7 @@
 import sys
 import json
 import time
-from cerebras.sdk.client import SdkCompiler
+from cerebras.sdk.client import SdkCompiler  # type: ignore
 
 P = int(sys.argv[1])
 bsz = int(sys.argv[2])

@@ -3,9 +3,9 @@ import numpy as np
 import argparse
 import struct
 
-from cerebras.sdk.sdk_utils import input_array_to_u32, memcpy_view
-from cerebras.sdk.runtime.sdkruntimepybind import SdkRuntime
-from cerebras.sdk.runtime.sdkruntimepybind import MemcpyDataType, MemcpyOrder
+from cerebras.sdk.sdk_utils import input_array_to_u32, memcpy_view  # type: ignore
+from cerebras.sdk.runtime.sdkruntimepybind import SdkRuntime  # type: ignore
+from cerebras.sdk.runtime.sdkruntimepybind import MemcpyDataType, MemcpyOrder  # type: ignore
 
 def parse_args():
     #[N,K]@[K,M]

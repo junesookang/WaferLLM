@@ -5,8 +5,8 @@ import struct
 import argparse
 import numpy as np
 
-from cerebras.appliance.pb.sdk.sdk_common_pb2 import MemcpyDataType, MemcpyOrder
-from cerebras.sdk.client import SdkRuntime, sdk_utils
+from cerebras.appliance.pb.sdk.sdk_common_pb2 import MemcpyDataType, MemcpyOrder  # type: ignore
+from cerebras.sdk.client import SdkRuntime, sdk_utils  # type: ignore
 
 out_path = "compile_out"
 

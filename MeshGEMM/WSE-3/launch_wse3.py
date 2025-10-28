@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument("--M", required=True, type=int, help="Input context length")
     parser.add_argument("--K", required=True, type=int, help="Word vector dimension")
     parser.add_argument("--N", required=True, type=int, help="Output dimension")
+    parser.add_argument("--L", required=False, type=int, default=1, help="Computation Loop to help Benchmarking")
     parser.add_argument("--simulator", action="store_true", help="Runs on simulator")
 
     args = parser.parse_args()
@@ -81,6 +82,8 @@ def main():
     K = args.K
     N = args.N
 
+    L = args.L
+
     Mt = M // P
     Kt = K // P
     Nt = N // P
@@ -115,7 +118,7 @@ def main():
 
     # tensor_W_offset = tensor_W
 
-    with open(f"{out_path}/artifact_{P}_{Mt}_{Kt}_{Nt}.json", "r", encoding="utf-8") as f:
+    with open(f"{out_path}/artifact_{P}_{Mt}_{Kt}_{Nt}_{L}.json", "r", encoding="utf-8") as f:
         data = json.load(f)
         artifact_id = data["artifact_id"]
 
@@ -221,7 +224,7 @@ def main():
     max_time_end = time_end.max()
 
     print(f"\nRepeat count: {total_repeat_times}")
-    print(f"P: {P}, M: {M}, K: {K}, N: {N}")
+    print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}")
     print(f"Mean cycle count: {np.mean(time_end - time_start)/total_repeat_times}")
     print(f"Max Cycle count: {(max_time_end - min_time_start)/total_repeat_times}")
 

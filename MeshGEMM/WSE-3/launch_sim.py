@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import math
 import argparse
 import struct
 
@@ -14,6 +15,7 @@ def parse_args():
     parser.add_argument("--M", required=True, type=int, help="Input context length")
     parser.add_argument("--K", required=True, type=int, help="Word vector dimension")
     parser.add_argument("--N", required=True, type=int, help="Output dimension")
+    parser.add_argument("--L", required=False, type=int, default=1, help="Computation Loop to help Benchmarking")
 
     args = parser.parse_args()
     return args
@@ -73,9 +75,15 @@ def main():
     K = args.K
     N = args.N
 
-    Mt = M // P
-    Kt = K // P
-    Nt = N // P
+    L = args.L
+
+    Mt = math.ceil(M / P)
+    Kt = math.ceil(K / P)
+    Nt = math.ceil(N / P)
+
+    M = Mt * P
+    K = Kt * P
+    N = Nt * P
 
     io_dtype = MemcpyDataType.MEMCPY_16BIT
     memcpy_order = MemcpyOrder.ROW_MAJOR
@@ -197,16 +205,16 @@ def main():
 
     expected_res = np.matmul(tensor_X, tensor_W)
 
-    print("Expected result:")
-    print(expected_res)
-    print("Actual result:")
-    print(res)
+    #print("Expected result:")
+    #print(expected_res)
+    #print("Actual result:")
+    #print(res)
 
     min_time_start = time_start.min()
     max_time_end = time_end.max()
 
     print(f"\nRepeat count: {total_repeat_times}")
-    print(f"P: {P}, M: {M}, K: {K}, N: {N}")
+    print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}")
     print(f"Mean cycle count: {np.mean(time_end - time_start)/total_repeat_times}")
     print(f"Max Cycle count: {(max_time_end - min_time_start)/total_repeat_times}")
 

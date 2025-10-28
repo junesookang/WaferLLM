@@ -6,6 +6,7 @@ param P: i16;
 param Mt: i16;
 param Kt: i16;
 param Nt: i16;
+param L: i16;
 
 // ---------------------- Input Matrix ------------------------ //
 
@@ -135,24 +136,26 @@ fn mm_compute() void {
         comm_mod.two_hop_comm(ptr_X_send, ptr_W_send, ptr_X_recv, ptr_W_recv);
         // @unblock(next_step_id);
 
-        X_dsd = @set_dsd_base_addr(X_dsd, ptr_X_send);
-        W_dsd = @set_dsd_base_addr(W_dsd, ptr_W_send);
+        for (@range(i16, L)) |l| {
+            X_dsd = @set_dsd_base_addr(X_dsd, ptr_X_send);
+            W_dsd = @set_dsd_base_addr(W_dsd, ptr_W_send);
 
-        X_dsd = @set_dsd_length(X_dsd, @bitcast(u16, Mt));
-        W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Nt));
+            X_dsd = @set_dsd_length(X_dsd, @bitcast(u16, Mt));
+            W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Nt));
 
-        for (@range(i16, Kt)) |k| {
+            for (@range(i16, Kt)) |k| {
 
-            out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
+                out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
 
-            @load_to_dsr(out_dest_dsr, out_dsd, .{ .save_address = true });
-            @load_to_dsr(out_src0_dsr, out_dsd, .{ .save_address = true });
-            @load_to_dsr(X_src1_dsr, X_dsd, .{ .save_address = false });
-            @map(gemv_static_step_X, W_dsd);
+                @load_to_dsr(out_dest_dsr, out_dsd, .{ .save_address = true });
+                @load_to_dsr(out_src0_dsr, out_dsd, .{ .save_address = true });
+                @load_to_dsr(X_src1_dsr, X_dsd, .{ .save_address = false });
+                @map(gemv_static_step_X, W_dsd);
 
-            X_dsd = @increment_dsd_offset(X_dsd, Mt, f16);
-            W_dsd = @increment_dsd_offset(W_dsd, Nt, f16);
+                X_dsd = @increment_dsd_offset(X_dsd, Mt, f16);
+                W_dsd = @increment_dsd_offset(W_dsd, Nt, f16);
 
+            }
         }
 
         step += 1;

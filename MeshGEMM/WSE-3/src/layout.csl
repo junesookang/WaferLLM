@@ -2,6 +2,7 @@ param P: i16;
 param Mt: i16;
 param Kt: i16;
 param Nt: i16;
+param L: i16;
 
 // const LAUNCH: color = @get_color(0);
 
@@ -49,7 +50,7 @@ layout {
             @set_tile_code(px, py, "meshgemm.csl", .{
                 .memcpy_params = memcpy_params,
                 .comm_params = comm_params,
-                .P = P, .Mt = Mt, .Kt = Kt, .Nt = Nt
+                .P = P, .Mt = Mt, .Kt = Kt, .Nt = Nt, .L = L
             });
 
             {

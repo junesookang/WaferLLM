@@ -95,18 +95,18 @@ fn init_(_px: i16, _py: i16) void {
     } else if (py == P-1) {
         is_last_py = true;
     }
-    
+
     // x-axis
     var remainder_x: i16 = px - @as(i16, math.floor_f16(@as(f16, px) / @as(f16, pe_num_p_group))) * pe_num_p_group;
 
     if (remainder_x == 0) {
         is_group_first_px = true;
     }
-    
+
     if (remainder_x == pe_num_p_group - 1) {
         is_group_last_px = true;
-    } 
-    
+    }
+
     if (remainder_x == root_1st_phase) {
         is_group_root_px = true;
     } else if (remainder_x < root_1st_phase) {
@@ -117,8 +117,8 @@ fn init_(_px: i16, _py: i16) void {
 
     if (px < pe_num_p_group) {
         is_first_group_px = true;
-    } 
-    
+    }
+
     if (px > P - pe_num_p_group - 1) {
         is_last_group_px = true;
     }
@@ -129,11 +129,11 @@ fn init_(_px: i16, _py: i16) void {
     if (remainder_y == 0) {
         is_group_first_py = true;
     }
-    
+
     if (remainder_y == pe_num_p_group - 1) {
         is_group_last_py = true;
-    } 
-    
+    }
+
     if (remainder_y == root_1st_phase) {
         is_group_root_py = true;
     } else if (remainder_y < root_1st_phase) {
@@ -144,8 +144,8 @@ fn init_(_px: i16, _py: i16) void {
 
     if (py < pe_num_p_group) {
         is_first_group_py = true;
-    } 
-    
+    }
+
     if (py > P - pe_num_p_group - 1) {
         is_last_group_py = true;
     }

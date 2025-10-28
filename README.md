@@ -17,7 +17,7 @@ Evaluations show that WaferLLM achieves up to 200× higher accelerator utilizati
 You will need Cerebras SDK to reproduce our results.
 
 - **Download link:** https://www.cerebras.ai/developers/sdk-request
-- **Documentation:** 
+- **Documentation:**
   - SDK v1.2.0 https://cerebras-sdk-docs-120.netlify.app/
   - SDK v1.4.0 https://sdk.cerebras.net/
 <!-- - **SDK Version:** This version of code is developed and fully tested on Cerebras SDK v1.2.0 -->

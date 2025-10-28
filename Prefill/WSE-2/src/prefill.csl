@@ -154,7 +154,7 @@ var X_norm_tile: [seq_len_p_pe * dim_p_pe]f16 = @zeros([seq_len_p_pe * dim_p_pe]
 var ptr_X_norm: [*]f16 = &X_norm_tile;
 
 // * XQ, XK, XV: QKV in prefill
-var XQ_tile: [seq_len_p_pe * dim_p_pe]f16 = @zeros([seq_len_p_pe * dim_p_pe]f16); 
+var XQ_tile: [seq_len_p_pe * dim_p_pe]f16 = @zeros([seq_len_p_pe * dim_p_pe]f16);
 var ptr_XQ: [*]f16 = &XQ_tile;
 var XQ_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{seq_len_p_pe * dim_p_pe} -> XQ_tile[i] });
 
@@ -297,7 +297,7 @@ fn left_matrix_shift_callback() void {
             ptr_left_matrix_send = ptr_left_matrix_recv;
             ptr_left_matrix_recv = swap_ptr;
         } // Useful value in ptr_left_matrix_recv
-        
+
         step = 0;
         matmul_compute();
     }
@@ -345,7 +345,7 @@ fn matmul_T_reduce_add() void {
     }
 
     comm_mod.matmul_T_reduce_add_x(reduce_root, ptr_seqLen_seqLen_tmp, ptr_score);
-    
+
     @load_to_dsr(comp_dest_dsr_1, seqLen_seqLen_tmp_dsd);
     @fmovh(comp_dest_dsr_1, 0.0);
 }
@@ -398,7 +398,7 @@ fn matmul_compute() void {
     swap_ptr = ptr_right_matrix_send;
     ptr_right_matrix_send = ptr_right_matrix_recv;
     ptr_right_matrix_recv = swap_ptr;
-    
+
     if (step < P) {
 
         comm_mod.mm_two_hop_comm(ptr_left_matrix_send, ptr_right_matrix_send, ptr_left_matrix_recv, ptr_right_matrix_recv, step, Mt, Kt, Nt);
@@ -448,7 +448,7 @@ fn rmsnorm_x() void {
 
     @load_to_dsr(comp_src0_dsr_2, local_sum_dsd, .{ .save_address = false });
     @load_to_dsr(comp_src1_dsr_2, seqLen_dsd_1, .{ .save_address = true });
-    
+
     for (@range(i16, dim_p_pe)) |i| {
         @faddh(comp_dest_dsr_2, comp_src0_dsr_2, comp_src1_dsr_2);
     }
@@ -603,7 +603,7 @@ fn xq_rope() void {
         @fsubh(seqLen_dsd_1, X_tmp_1_dsd, X_tmp_2_dsd);
         @faddh(seqLen_dsd_2, X_tmp_3_dsd, X_tmp_4_dsd);
     }
-    
+
     prefill_struct();
 }
 
@@ -631,7 +631,7 @@ fn xk_rope() void {
         @fsubh(seqLen_dsd_1, X_tmp_1_dsd, X_tmp_2_dsd);
         @faddh(seqLen_dsd_2, X_tmp_3_dsd, X_tmp_4_dsd);
     }
-    
+
     prefill_struct();
 }
 
@@ -688,7 +688,7 @@ fn softmax_score() void {
     for (@range(i16, seq_len_p_pe)) |i| {
         @fsubh(comp_dest_dsr_1, comp_src0_dsr_1, comp_src1_dsr_1);
     }
-    
+
     for (@range(i16, seq_len_p_pe * seq_len_p_pe)) |i| {
         seqLen_seqLen_tmp[i] = math_lib.exp_f16(score[i]);
     }
@@ -812,7 +812,7 @@ fn rmsnorm_z() void {
 
     @load_to_dsr(comp_src0_dsr_2, local_sum_dsd, .{ .save_address = false });
     @load_to_dsr(comp_src1_dsr_2, seqLen_dsd_2, .{ .save_address = true });
-    
+
     for (@range(i16, dim_p_pe)) |i| {
         @faddh(comp_dest_dsr_2, comp_src0_dsr_2, comp_src1_dsr_2);
     }
@@ -919,7 +919,7 @@ fn silu_kernel(x: f16) f16 {
 fn z3_comp() void {
 
     @map(silu_kernel, z2_dsd, z2_dsd);
-    
+
     @load_to_dsr(comp_dest_dsr_1, z3_dsd);
     @load_to_dsr(comp_src0_dsr_1, z1_dsd);
     @load_to_dsr(comp_src1_dsr_1, z2_dsd);
@@ -1062,7 +1062,7 @@ fn prefill_entry() void {
             timestamp.get_timestamp(&tscRefBuffer);
             timestamp.get_timestamp(&tscStartBuffer);
         }
-        
+
         repeat_times += 1;
         flag = 0;
         prefill_struct();

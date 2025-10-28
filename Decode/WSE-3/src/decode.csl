@@ -59,11 +59,11 @@ const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
 const math = @import_module("<math>");
 const layout_mod = @import_module("<layout>");
 
-const comm_mod = @import_module("comm_lib/comm_pe.csl", @concat_structs(comm_params, .{ 
+const comm_mod = @import_module("comm_lib/comm_pe.csl", @concat_structs(comm_params, .{
     .P = P, .bsz = bsz, .dim_p_pe = dim_p_pe,
     .seq_len_p_pe = seq_len_p_pe,
     .ffn_dim_p_pe = ffn_dim_p_pe,
-    
+
     .pe_num_p_group = pe_num_p_group,
     .root_1st_phase = root_1st_phase, .root_2nd_phase = root_2nd_phase,
 }));
@@ -185,7 +185,7 @@ fn vecmat_computation() void {
     left_vector_dsd = @set_dsd_length(left_vector_dsd, @bitcast(u16, Kt));
     right_matrix_dsd = @set_dsd_length(right_matrix_dsd, @bitcast(u16, Nt));
     out_vector_dsd = @set_dsd_length(out_vector_dsd, @bitcast(u16, Nt));
-    
+
     for (@range(i16, bsz)) |b| {
         right_matrix_dsd = @set_dsd_base_addr(right_matrix_dsd, ptr_right_matrix);
 
@@ -552,7 +552,7 @@ fn score_matvec_mult() void {
     @fmovh(score_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_QKV_tile);
-    
+
     ptr_right_matrix = &XKCache_tile;
 
     out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_score);
@@ -613,7 +613,7 @@ fn output_matvec_mult() void {
     @fmovh(output_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_score);
-    
+
     ptr_right_matrix = &XVCache_tile;
 
     out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_output);
@@ -630,7 +630,7 @@ fn o_matvec_mult() void {
     @fmovh(h1_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_output);
-    
+
     ptr_right_matrix = &O_weight_tile;
 
     out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_h1);
@@ -655,7 +655,7 @@ fn rmsnorm_z() void {
     @load_to_dsr(src0_dsr_1, Z_dsd);
     @load_to_dsr(src1_dsr_1, Z_dsd);
     @fmulh(dest_dsr_1, src0_dsr_1, src1_dsr_1);
-    
+
     dim_p_pe_dsd_1 = @set_dsd_base_addr(dim_p_pe_dsd_1, ptr_X_tmp);
     @load_to_dsr(src1_dsr_1, dim_p_pe_dsd_1, .{ .save_address = true });
     for (@range(i16, bsz)) |b| {
@@ -685,7 +685,7 @@ fn up_matvec_mult() void {
     @fmovh(z1_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_z_norm);
-    
+
     ptr_right_matrix = &UP_weight_tile;
 
     // out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_z1);
@@ -703,7 +703,7 @@ fn gate_matvec_mult() void {
     @fmovh(z2_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_z_norm);
-    
+
     ptr_right_matrix = &GATE_weight_tile;
 
     // out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_z2);
@@ -742,7 +742,7 @@ fn down_matvec_mult() void {
     @fmovh(h2_dsd, 0.0);
 
     left_vector_dsd = @set_dsd_base_addr(left_vector_dsd, ptr_z3);
-    
+
     ptr_right_matrix = &DOWN_weight_tile;
 
     out_vector_dsd = @set_dsd_base_addr(out_vector_dsd, ptr_h2);

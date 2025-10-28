@@ -375,12 +375,12 @@ layout {
                 @set_color_config(px, py, comm_odd_even.c_up_recv, .{ .routes = .{ .rx = .{SOUTH}, .tx = .{RAMP} } });
                 @set_color_config(px, py, comm_odd_even.c_up_send, .{ .routes = .{ .rx = .{RAMP}, .tx = .{NORTH} } });
             }
-            
+
         }
 
         py = 1;
         while (py < P) : (py += 2) {
-            
+
             const quotient_y: i16 = @as(i16, math.floor_f16(@as(f16, py) / @as(f16, pe_num_p_group)));
             const remainder_y: i16 = py - quotient_y * pe_num_p_group;
 

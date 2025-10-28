@@ -45,7 +45,7 @@ layout {
 
     const comm_even = comm.get_step_params(true);
     const comm_odd = comm.get_step_params(false);
-    
+
     px = 0;
     while (px < P) : (px += 1) {
         const memcpy_params = memcpy.get_params(px);
@@ -179,7 +179,7 @@ layout {
 
     @export_name("time_memcpy", [*]f32, true);
     @export_name("time_ref", [*]f32, true);
-    
+
     @export_name("f_memcpy_timestamps", fn()void);
     @export_name("f_reference_timestamps", fn()void);
 }

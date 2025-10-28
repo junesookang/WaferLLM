@@ -1,11 +1,11 @@
 // This diagram represents a 2D coordinate system with labeled axes of the mesh-like PEs-array.
 // The x-axis and y-axis intersect at the origin, dividing the plane into four quadrants.
 //
-//        |  
-//  Head  |  
-//        |  
+//        |
+//  Head  |
+//        |
 // -------+------> x-axis
-//        |  
+//        |
 //        |  Tail
 //        v
 //     y-axis
@@ -69,15 +69,15 @@ layout {
 
             const quotient_y: i16 = @as(i16, math.floor_f16(@as(f16, py) / @as(f16, pe_num_p_group)));
             const remainder_y: i16 = py - quotient_y * pe_num_p_group;
-            
+
             const comm_params = comm.get_params(px, quotient_x, remainder_x, py, quotient_y, remainder_y);
 
             @set_tile_code(px, py, "decode.csl", .{
                 .memcpy_params = memcpy_params,
                 .comm_params = comm_params,
 
-                .P = P, .bsz = bsz, .dim_p_pe = dim_p_pe, 
-                .pes_p_head = pes_p_head, 
+                .P = P, .bsz = bsz, .dim_p_pe = dim_p_pe,
+                .pes_p_head = pes_p_head,
                 .pes_p_kv_head = pes_p_kv_head,
                 .head_dim_p_pe = head_dim_p_pe,
                 .seq_len_p_pe = seq_len_p_pe,

@@ -159,11 +159,11 @@ fn init_(_px: i16, _py: i16) void {
     if (remainder_y == 0) {
         is_group_first_py = true;
     }
-    
+
     if (remainder_y == pe_num_group - 1) {
         is_group_last_py = true;
-    } 
-    
+    }
+
     if (remainder_y == root_1st_phase) {
         is_group_root_py = true;
     } else if (remainder_y < root_1st_phase) {
@@ -174,8 +174,8 @@ fn init_(_px: i16, _py: i16) void {
 
     if (py < pe_num_group) {
         is_first_group_py = true;
-    } 
-    
+    }
+
     if (py > P - pe_num_group - 1) {
         is_last_group_py = true;
     }
@@ -190,7 +190,7 @@ fn two_tree_allreduce_y(vector_buf_ptr: [*]f16) void {
     if (is_group_root_py) {
         if (!is_group_last_py) {
             @faddh(vector_buf_dsd, mv_up_recv, vector_buf_dsr);
-        } 
+        }
         @faddh(vector_buf_dsd, mv_down_recv, vector_buf_dsr);
     } else if (is_group_first_py) {
         @fmovh(mv_down_send, vector_buf_dsr);

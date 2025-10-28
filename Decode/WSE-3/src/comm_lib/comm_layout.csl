@@ -394,7 +394,7 @@ fn get_params(px: i16, quotient_x: i16, remainder_x: i16, py: i16, quotient_y: i
 
         .X_BD = if (px == 0 or px == P - 1) X_BD_ht else X_BD,
         .Y_BD = if (py == 0 or py == P - 1) Y_BD_ht else Y_BD,
-        
+
         .reduce_1st_color_0 = reduce_1st_color[0],
         .reduce_1st_color_1 = reduce_1st_color[1],
 

@@ -75,7 +75,7 @@ fn init_(_px: i16, _py: i16) void {
     if (px == 0) {
         is_first_px = true;
     }
-    
+
     if (px == P-1) {
         is_last_px = true;
     }
@@ -167,7 +167,7 @@ fn mv_allreduce_max_x(vector_buf_ptr: [*]f16) void {
     if (px == root) {
         @fmaxh(vector_buf_dsd, mv_right_recv_max, vector_buf_dsr);
         @fmaxh(vector_buf_dsd, mv_left_recv_max, vector_buf_dsr);
-        
+
         @fmovh(left_bd_send, vector_buf_dsr);
         @fmovh(right_bd_send, vector_buf_dsr);
     } else {
@@ -197,7 +197,7 @@ fn mv_allreduce_add_x(vector_buf_ptr: [*]f16) void {
         // First receive data from down (mv_up_recv) and then from up (mv_down_recv)
         @faddh(vector_buf_dsd, mv_left_recv, vector_buf_dsr);
         @faddh(vector_buf_dsd, mv_right_recv, vector_buf_dsr);
-        
+
         @fmovh(left_bd_send, vector_buf_dsr);
         @fmovh(right_bd_send, vector_buf_dsr);
     } else {
@@ -380,7 +380,7 @@ comptime {
 }
 
 fn mm_two_hop_comm(left_matrix_send_buffer_ptr: [*]f16, right_matrix_send_buffer_ptr: [*]f16, left_matrix_recv_buffer_ptr: [*]f16, right_matrix_recv_buffer_ptr: [*]f16, step: i16, Mt: i16, Kt: i16, Nt: i16) void {
-    
+
     if (step == 0) {
         var _Mt_Kt = ((Mt * Kt) / 4) * 4;
         var _Kt_Nt = ((Kt * Nt) / 4) * 4;
@@ -423,7 +423,7 @@ fn mm_two_hop_comm(left_matrix_send_buffer_ptr: [*]f16, right_matrix_send_buffer
 }
 
 fn mm_two_hop_comm_impl(left_matrix_send_buffer_ptr: [*]f16, right_matrix_send_buffer_ptr: [*]f16, left_matrix_recv_buffer_ptr: [*]f16, right_matrix_recv_buffer_ptr: [*]f16) void {
-    
+
     left_matrix_send_dsd = @set_dsd_base_addr(left_matrix_send_dsd, left_matrix_send_buffer_ptr);
 
     right_matrix_send_dsd = @set_dsd_base_addr(right_matrix_send_dsd, right_matrix_send_buffer_ptr);
@@ -597,7 +597,7 @@ fn left_matrix_shift_impl(left_matrix_send_buffer_ptr: [*]f16, left_matrix_recv_
 comptime {
     @block(c_right_recv);
     @block(c_left_recv);
-    
+
     @block(x_recv_color);
     @block(y_recv_color);
     @block(x_shift_recv_color);

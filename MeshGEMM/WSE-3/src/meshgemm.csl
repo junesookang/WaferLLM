@@ -31,7 +31,7 @@ const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
 const layout_module = @import_module("<layout>");
 
 const comm_mod = @import_module("comm_lib/comm_pe.csl", @concat_structs(comm_params, .{
-    .P = P, .Mt = Mt, .Kt = Kt, .Nt = Nt, 
+    .P = P, .Mt = Mt, .Kt = Kt, .Nt = Nt,
     .x_finish_id = x_finish_id,
     .y_finish_id = y_finish_id,
     .left_matrix_shift_callback = left_matrix_shift_callback,
@@ -129,7 +129,7 @@ fn mm_compute() void {
     swap_ptr = ptr_W_send;
     ptr_W_send = ptr_W_recv;
     ptr_W_recv = swap_ptr;
-    
+
     if (step < P) {
 
         comm_mod.two_hop_comm(ptr_X_send, ptr_W_send, ptr_X_recv, ptr_W_recv);
@@ -196,7 +196,7 @@ fn meshgemm_entry() void {
         }
 
         repeat_times += 1;
-        
+
         ptr_X_send = &X_1_tile;
         ptr_X_recv = &X_0_tile;
 
@@ -228,10 +228,10 @@ fn left_matrix_shift_callback() void {
             ptr_X_send = ptr_X_recv;
             ptr_X_recv = swap_ptr;
         } // Useful value in ptr_X_recv
-        
+
         step = 0;
         @fmovh(res_dsd, 0.0);
-        
+
         ptr_W_send = &W_1_tile;
         ptr_W_recv = &W_0_tile;
 

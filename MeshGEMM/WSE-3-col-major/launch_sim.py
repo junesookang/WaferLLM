@@ -236,10 +236,10 @@ def main():
 
     expected_res = np.matmul(tensor_X, tensor_W)
 
-    print("Expected result:")
-    print(expected_res)
-    print("Actual result:")
-    print(res)
+    #print("Expected result:")
+    #print(expected_res)
+    #print("Actual result:")
+    #print(res)
 
     min_time_start = time_start.min()
     max_time_end = time_end.max()

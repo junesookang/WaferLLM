@@ -6,8 +6,10 @@ param Nt: i16;
 var px: i16 = 0;
 var py: i16 = 0;
 
-const _Mt_Kt: i16 = ((Mt * Kt) / 2) * 2;
-const _Kt_Nt: i16 = ((Kt * Nt) / 2) * 2;
+//const _Mt_Kt: i16 = ((Mt * Kt) / 2) * 2;
+//const _Kt_Nt: i16 = ((Kt * Nt) / 2) * 2;
+const _Mt_Kt: i16 = Mt * Kt;
+const _Kt_Nt: i16 = Kt * Nt;
 
 param x_send_color: color;
 param x_recv_color: color;

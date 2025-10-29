@@ -7,6 +7,9 @@ sim.log
 simconfig.json
 wio_flow.json
 
+sim_results.json
+sim_result_plot.py
+
 artifact_*.json
 compile_out/
 wsjob-*.json

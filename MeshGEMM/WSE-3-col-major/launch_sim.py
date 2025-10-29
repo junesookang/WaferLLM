@@ -3,6 +3,8 @@ import numpy as np
 import math
 import argparse
 import struct
+import json
+from pathlib import Path
 
 from cerebras.sdk.sdk_utils import input_array_to_u32, memcpy_view  # type: ignore
 from cerebras.sdk.runtime.sdkruntimepybind import SdkRuntime  # type: ignore
@@ -71,9 +73,13 @@ def main():
 
     P = args.P
 
-    M = args.M
-    K = args.K
-    N = args.N
+    orig_M = args.M
+    orig_K = args.K
+    orig_N = args.N
+
+    M = orig_M
+    K = orig_K
+    N = orig_N
 
     L = args.L
 
@@ -84,6 +90,31 @@ def main():
     M = Mt * P
     K = Kt * P
     N = Nt * P
+
+    file_name = "sim_results.json"
+    file_path = Path(file_name)
+    existing_results = []
+
+    if file_path.exists():
+        try:
+            file_content = file_path.read_text().strip()
+            if file_content:
+                parsed = json.loads(file_content)
+                if isinstance(parsed, list):
+                    existing_results = parsed
+        except json.JSONDecodeError:
+            existing_results = []
+
+    if any(
+        entry.get("P") == P
+        and entry.get("M") == M
+        and entry.get("K") == K
+        and entry.get("N") == N
+        and entry.get("L") == L
+        for entry in existing_results
+    ):
+        print(f"Result for P={P}, M={M}, K={K}, N={N}, L={L} already exists. Skipping simulation.")
+        return
 
     io_dtype = MemcpyDataType.MEMCPY_16BIT
     memcpy_order = MemcpyOrder.ROW_MAJOR
@@ -205,10 +236,10 @@ def main():
 
     expected_res = np.matmul(tensor_X, tensor_W)
 
-    #print("Expected result:")
-    #print(expected_res)
-    #print("Actual result:")
-    #print(res)
+    print("Expected result:")
+    print(expected_res)
+    print("Actual result:")
+    print(res)
 
     min_time_start = time_start.min()
     max_time_end = time_end.max()
@@ -217,6 +248,22 @@ def main():
     print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}")
     print(f"Mean cycle count: {np.mean(time_end - time_start)/total_repeat_times}")
     print(f"Max Cycle count: {(max_time_end - min_time_start)/total_repeat_times}")
+
+    result_entry = {"P": P, "M": M, "K": K, "N": N, "L": L, "mean_cycle": np.mean(time_end - time_start)/total_repeat_times,}
+
+    existing_results.append(result_entry)
+    existing_results.sort(
+        key=lambda entry: (
+            entry.get("P", 0),
+            entry.get("M", 0),
+            entry.get("K", 0),
+            entry.get("N", 0),
+            entry.get("L", 0),
+        )
+    )
+    with file_path.open("w") as f:
+        json.dump(existing_results, f, indent=2)
+        f.write("\n")
 
 if __name__ == "__main__":
     main()

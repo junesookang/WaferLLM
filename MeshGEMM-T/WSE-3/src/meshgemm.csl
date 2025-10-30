@@ -5,8 +5,8 @@ param comm_params: comptime_struct;
 param P: i16;
 param Mt: i16;
 param Kt: i16;
-param Nt: i16;
 param L: i16;
+param R: i16;
 
 // ---------------------- Input Matrix ------------------------ //
 
@@ -15,54 +15,53 @@ var X_1_tile: [Mt*Kt]f16 = @zeros([Mt*Kt]f16);
 var ptr_X: [*]f16 = &X_0_tile;
 var X_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> X_0_tile[i] });
 
-var W_0_tile: [Kt*Nt]f16 = @zeros([Kt*Nt]f16);
-var W_1_tile: [Kt*Nt]f16 = @zeros([Kt*Nt]f16);
+var W_0_tile: [Mt*Kt]f16 = @zeros([Mt*Kt]f16);
+var W_1_tile: [Mt*Kt]f16 = @zeros([Mt*Kt]f16);
 var ptr_W: [*]f16 = &W_0_tile;
-var W_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Nt} -> W_0_tile[i] });
+var W_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> W_0_tile[i] });
 
 // ---------------------- Output Matrix ----------------------- //
 
-var res_tile: [Mt*Nt]f16 = @zeros([Mt*Nt]f16);
-var ptr_res: [*]f16 = &res_tile;
-var res_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt*Nt} -> res_tile[i] });
+var res_tile: [Mt*Mt]f16 = @zeros([Mt*Mt]f16);
+var res_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt*Mt} -> res_tile[i] });
+var out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> res_tile[i] });
+var ptr_out: [*]f16 = &res_tile;
+
+var reduce_tile: [Mt*Mt]f16 = @zeros([Mt*Mt]f16);
+var ptr_reduce: [*]f16 = &reduce_tile;
+var reduce_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt*Mt} -> reduce_tile[i] });
 
 // ---------------------- Modules ------------------------------ //
 
 const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math_lib = @import_module("<math>");
 const layout_module = @import_module("<layout>");
 
 const comm_mod = @import_module("comm_lib/comm_pe.csl", @concat_structs(comm_params, .{
-    .P = P, .Mt = Mt, .Kt = Kt, .Nt = Nt,
-    .x_finish_id = x_finish_id,
+    .P = P, .Mt = Mt, .Kt = Kt,
     .y_finish_id = y_finish_id,
-    .left_matrix_shift_callback = left_matrix_shift_callback,
 }));
 
 // ---------------------- Local Variables ---------------------- //
 
-const jumpcast_finish_id: local_task_id = @get_local_task_id(23);
-const x_finish_id: local_task_id = @get_local_task_id(24); // X axis
-const y_finish_id: local_task_id = @get_local_task_id(25); // Y axis
-const next_step_id: local_task_id = @get_local_task_id(26);
+const y_finish_id: local_task_id = @get_local_task_id(23); // Y axis
+const next_step_id: local_task_id = @get_local_task_id(24);
 
 var px: i16 = 0;
 var py: i16 = 0;
 
-var x_shift_step: i16 = 0;
-var x_shift_reverse: bool = false;
-
-var swap_ptr: [*]f16 = &X_0_tile;
-var ptr_X_send: [*]f16 = &X_0_tile;
-var ptr_X_recv: [*]f16 = &X_1_tile;
+var swap_ptr: [*]f16 = &W_0_tile;
 var ptr_W_send: [*]f16 = &W_0_tile;
 var ptr_W_recv: [*]f16 = &W_1_tile;
-
-var out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> res_tile[i] });
-var ptr_out: [*]f16 = &res_tile;
 
 const out_dest_dsr = @get_dsr(dsr_dest, 1);
 const out_src0_dsr = @get_dsr(dsr_src0, 1);
 const X_src1_dsr = @get_dsr(dsr_src1, 1);
+
+var root: i16 = P / 2;
+var reduce_root: i16 = 0;
+var offset_step: i16 = 0;
+var current_offset: i16 = 0;
 
 // ------------------------- Timer ------------------------- //
 
@@ -85,47 +84,50 @@ fn init_task() void {
     px = @as(i16, layout_module.get_x_coord());
     py = @as(i16, layout_module.get_y_coord());
 
-    if (py%2 == 0) {
-        x_shift_step = py/2;
-        x_shift_reverse = true;
+    // * offset_step: offset in the 2-hop communication order
+    if (py == 0) {
+        offset_step = 0;
+    } else if (py % 2 == 0) {
+        offset_step = P - (py / 2);
     } else {
-        x_shift_step = (py+1)/2;
-        x_shift_reverse = false;
+        offset_step = (py + 1) / 2;
     }
 
     comm_mod.init_(px, py);
     sys_mod.unblock_cmd_stream();
 }
 
-task x_finish() void {
-    @block(x_finish_id);
-    @unblock(jumpcast_finish_id);
-}
-
 task y_finish() void {
     @block(y_finish_id);
-    @activate(jumpcast_finish_id);
-}
-
-task jumpcast_finish() void {
-    @block(jumpcast_finish_id);
     @unblock(next_step_id);
 }
 
 task next_step() void {
     @block(next_step_id);
-    mm_compute();
+    mm_T_compute();
 }
 
 fn gemv_static_step_X(curW: f16) void {
     @fmach(out_dest_dsr, out_src0_dsr, X_src1_dsr, curW);
 }
 
-fn mm_compute() void {
+fn mm_T_reduce_add() void {
 
-    swap_ptr = ptr_X_send;
-    ptr_X_send = ptr_X_recv;
-    ptr_X_recv = swap_ptr;
+    current_offset = @as(i16, math_lib.floor_f16(@as(f16, (offset_step + step - 1)) / @as(f16, P)));
+    current_offset = (offset_step + step - 1) - current_offset * P;
+
+    if (current_offset == 0) {
+        reduce_root = 0;
+    } else if (current_offset <= root) {
+        reduce_root = 2 * current_offset - 1;
+    } else {
+        reduce_root = 2 * (P - current_offset);
+    }
+
+    comm_mod.reduce_add_x(reduce_root, ptr_out, ptr_reduce);
+}
+
+fn mm_T_compute() void {
 
     swap_ptr = ptr_W_send;
     ptr_W_send = ptr_W_recv;
@@ -133,15 +135,15 @@ fn mm_compute() void {
 
     if (step < P) {
 
-        comm_mod.two_hop_comm(ptr_X_send, ptr_W_send, ptr_X_recv, ptr_W_recv);
+        comm_mod.two_hop_comm_T(ptr_W_send, ptr_W_recv);
         // @unblock(next_step_id);
 
         for (@range(i16, L)) |l| {
-            X_dsd = @set_dsd_base_addr(X_dsd, ptr_X_send);
+            X_dsd = @set_dsd_base_addr(X_dsd, ptr_X);
             W_dsd = @set_dsd_base_addr(W_dsd, ptr_W_send);
 
             X_dsd = @set_dsd_length(X_dsd, @bitcast(u16, Mt));
-            W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Nt));
+            W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Mt));
 
             for (@range(i16, Kt)) |k| {
 
@@ -153,12 +155,16 @@ fn mm_compute() void {
                 @map(gemv_static_step_X, W_dsd);
 
                 X_dsd = @increment_dsd_offset(X_dsd, Mt, f16);
-                W_dsd = @increment_dsd_offset(W_dsd, Nt, f16);
+                W_dsd = @increment_dsd_offset(W_dsd, Mt, f16);
 
             }
         }
 
         step += 1;
+        for (@range(i16, R)) |r| {
+            mm_T_reduce_add();
+        }
+        @fmovh(res_dsd, 0.0);
         @activate(next_step_id);
 
     } else {
@@ -200,49 +206,23 @@ fn meshgemm_entry() void {
 
         repeat_times += 1;
 
-        ptr_X_send = &X_1_tile;
-        ptr_X_recv = &X_0_tile;
-
-        left_matrix_shift_callback();
+        matmul_T();
     }
 }
 
-fn left_matrix_shift_callback() void {
-    if (step < @as(i16, P/2)) {
+fn matmul_T() void {
 
-        if (x_shift_step >= 0) {
-            x_shift_step -= 1;
+    step = 0;
+    @fmovh(res_dsd, 0.0);
+    @fmovh(reduce_dsd, 0.0);
 
-            swap_ptr = ptr_X_send;
-            ptr_X_send = ptr_X_recv;
-            ptr_X_recv = swap_ptr;
-        }
+    ptr_W_send = &W_1_tile;
+    ptr_W_recv = &W_0_tile;
 
-        step += 1;
+    out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
+    ptr_out = &res_tile;
 
-        if (x_shift_reverse) {
-            comm_mod.left_matrix_shift_reverse(ptr_X_send, ptr_X_recv);
-        } else {
-            comm_mod.left_matrix_shift(ptr_X_send, ptr_X_recv);
-        }
-    } else {
-        if (x_shift_step != 0) {
-            swap_ptr = ptr_X_send;
-            ptr_X_send = ptr_X_recv;
-            ptr_X_recv = swap_ptr;
-        } // Useful value in ptr_X_recv
-
-        step = 0;
-        @fmovh(res_dsd, 0.0);
-
-        ptr_W_send = &W_1_tile;
-        ptr_W_recv = &W_0_tile;
-
-        out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
-        ptr_out = &res_tile;
-
-        mm_compute();
-    }
+    mm_T_compute();
 }
 
 fn exit() void {
@@ -291,21 +271,17 @@ comptime {
 }
 
 comptime {
-    @bind_local_task(x_finish, x_finish_id);
     @bind_local_task(y_finish, y_finish_id);
-    @bind_local_task(jumpcast_finish, jumpcast_finish_id);
     @bind_local_task(next_step, next_step_id);
 
-    @block(x_finish_id);
     @block(y_finish_id);
-    @block(jumpcast_finish_id);
     @block(next_step_id);
 }
 
 comptime {
     @export_symbol(ptr_X, "X");
     @export_symbol(ptr_W, "W");
-    @export_symbol(ptr_res, "res");
+    @export_symbol(ptr_reduce, "res");
 
     @export_symbol(init_task);
     @export_symbol(meshgemm_entry);

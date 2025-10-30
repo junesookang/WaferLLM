@@ -16,8 +16,8 @@ def parse_args():
     parser.add_argument("--P", required=True, type=int, help="PEs rectangle size: P x P")
     parser.add_argument("--M", required=True, type=int, help="Input context length")
     parser.add_argument("--K", required=True, type=int, help="Word vector dimension")
-    parser.add_argument("--N", required=True, type=int, help="Output dimension")
     parser.add_argument("--L", required=False, type=int, default=1, help="Computation Loop to help Benchmarking")
+    parser.add_argument("--R", required=False, type=int, default=1, help="Reduction Loop to help Benchmarking")
 
     args = parser.parse_args()
     return args
@@ -28,44 +28,6 @@ def float_to_hex(f):
 def make_u48(words):
     return words[0] + (words[1] << 16) + (words[2] << 32)
 
-def assignId(pc, P):
-    send_id = 0
-    recv_id = 0
-
-    pc = pc + 1
-
-    if pc%2 == 0:
-        send_id = pc - 2
-        recv_id = pc + 2
-    else:
-        send_id = pc + 2
-        recv_id = pc - 2
-
-    if pc == 1:
-        send_id = 3
-        recv_id = 2
-
-    if pc == 2:
-        send_id = 1
-        recv_id = min(recv_id, P)
-
-    if P%2 == 0:
-        if pc == P-1:
-            send_id = P
-            recv_id = P - 3
-        if pc == P:
-            send_id = P - 2
-            recv_id = P - 1
-    else:
-        if pc == P-1:
-            send_id = max(send_id, 1)
-            recv_id = P
-        if pc == P:
-            send_id = P - 1
-            recv_id = P - 2
-    return send_id - 1, recv_id - 1
-
-
 def main():
     random.seed(2025)
 
@@ -75,21 +37,18 @@ def main():
 
     orig_M = args.M
     orig_K = args.K
-    orig_N = args.N
 
     M = orig_M
     K = orig_K
-    N = orig_N
 
     L = args.L
+    R = args.R
 
     Mt = math.ceil(M / P)
     Kt = math.ceil(K / P)
-    Nt = math.ceil(N / P)
 
     M = Mt * P
     K = Kt * P
-    N = Nt * P
 
     file_name = "sim_results.json"
     file_path = Path(file_name)
@@ -109,11 +68,11 @@ def main():
         entry.get("P") == P
         and entry.get("M") == M
         and entry.get("K") == K
-        and entry.get("N") == N
         and entry.get("L") == L
+        and entry.get("R") == R
         for entry in existing_results
     ):
-        print(f"Result for P={P}, M={M}, K={K}, N={N}, L={L} already exists. Skipping simulation.")
+        print(f"Result for P={P}, M={M}, K={K}, L={L}, R={R} already exists. Skipping simulation.")
         return
 
     io_dtype = MemcpyDataType.MEMCPY_16BIT
@@ -121,28 +80,7 @@ def main():
 
     tensor_X = np.random.rand(M, K).astype(np.float16)
 
-    tensor_W = np.random.rand(K, N).astype(np.float16)
-
-    ind = np.zeros((P, P)).astype(int)
-
-    for i in range(P):
-        for j in range(P):
-            if i == 0:
-                ind[0, j] = j
-            elif i == 1:
-                _, ind[1, j] = assignId(ind[0, j], P)
-            else:
-                if (i-1)%2==0:
-                    _, ind[i, j] = assignId(ind[i-2, j], P)
-                else:
-                    ind[i, j], _ = assignId(ind[i-2, j], P)
-
-    tensor_W_offset = np.zeros((K, N)).astype(np.float16)
-
-    for i in range(P):
-        for j in range(P):
-            t = ind[i, j]
-            tensor_W_offset[i*Kt:(i+1)*Kt, j*Nt:(j+1)*Nt] = tensor_W[t*Kt:(t+1)*Kt, j*Nt:(j+1)*Nt]
+    tensor_W = np.random.rand(M, K).astype(np.float16)
 
     runner = SdkRuntime("out")
     runner.load()
@@ -163,24 +101,24 @@ def main():
     runner.memcpy_h2d(sym_X, X_u32, 0, 0, P, P, Mt*Kt, \
                       streaming=False, data_type=io_dtype, order=memcpy_order, nonblock=False)
 
-    W1 = tensor_W_offset.reshape(P, Kt, P, Nt)
-    W2 = W1.transpose(0, 2, 1, 3)
-    W3 = W2.reshape(P, P, Kt*Nt)
+    W1 = tensor_W.reshape(P, Mt, P, Kt)
+    W2 = W1.transpose(0, 2, 3, 1)
+    W3 = W2.reshape(P, P, Mt*Kt)
     W_u32 = input_array_to_u32(W3.ravel(), 1, 1)
-    runner.memcpy_h2d(sym_W, W_u32, 0, 0, P, P, Kt*Nt, \
+    runner.memcpy_h2d(sym_W, W_u32, 0, 0, P, P, Mt*Kt, \
                       streaming=False, data_type=io_dtype, order=memcpy_order, nonblock=False)
 
     runner.launch('init_task', nonblock=False)
     total_warmup_times, total_repeat_times = 0, 1
     runner.launch('meshgemm_host', np.int16(total_warmup_times), np.int16(total_repeat_times), nonblock=False)
 
-    res3_1d_u32 = np.zeros(M*N, dtype=np.uint32)
-    runner.memcpy_d2h(res3_1d_u32, sym_res, 0, 0, P, P, Mt*Nt, \
+    res3_1d_u32 = np.zeros(M*M, dtype=np.uint32)
+    runner.memcpy_d2h(res3_1d_u32, sym_res, 0, 0, P, P, Mt*Mt, \
                       streaming=False, data_type=io_dtype, order=memcpy_order, nonblock=False)
     res3_1d_fp16 = memcpy_view(res3_1d_u32, np.dtype(np.float16))
-    res3 = res3_1d_fp16.reshape((P, P, Nt, Mt))
+    res3 = res3_1d_fp16.reshape((P, P, Mt, Mt))
     res2 = res3.transpose(0, 3, 1, 2)
-    res = res2.reshape(M, N)
+    res = res2.reshape(M, M)
 
     runner.launch('init_task', nonblock=False)
     total_warmup_times, total_repeat_times = 1, 5
@@ -234,22 +172,22 @@ def main():
     time_start = time_start - time_ref
     time_end = time_end - time_ref
 
-    expected_res = np.matmul(tensor_X, tensor_W)
+    expected_res = np.matmul(tensor_X, tensor_W.T)
 
-    #print("Expected result:")
-    #print(expected_res)
-    #print("Actual result:")
-    #print(res)
+    print("Expected result:")
+    print(expected_res)
+    print("Actual result:")
+    print(res)
 
     min_time_start = time_start.min()
     max_time_end = time_end.max()
 
     print(f"\nRepeat count: {total_repeat_times}")
-    print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}")
+    print(f"P: {P}, M: {M}, K: {K},, fmach computation loop: {L}, reduction loop: {R}")
     print(f"Mean cycle count: {np.mean(time_end - time_start)/total_repeat_times}")
     print(f"Max Cycle count: {(max_time_end - min_time_start)/total_repeat_times}")
 
-    result_entry = {"P": P, "M": M, "K": K, "N": N, "L": L, "mean_cycle": np.mean(time_end - time_start)/total_repeat_times,}
+    result_entry = {"P": P, "M": M, "K": K, "L": L, "R": R, "mean_cycle": np.mean(time_end - time_start)/total_repeat_times,}
 
     existing_results.append(result_entry)
     existing_results.sort(
@@ -257,7 +195,6 @@ def main():
             entry.get("P", 0),
             entry.get("M", 0),
             entry.get("K", 0),
-            entry.get("N", 0),
             entry.get("L", 0),
         )
     )

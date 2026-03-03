@@ -5,7 +5,7 @@ SIM_RESULTS_FILE="sim_results.json"
 declare -A existing_config_map=()
 
 if [[ -f "$SIM_RESULTS_FILE" ]] && command -v python3 >/dev/null 2>&1; then
-  mapfile -t existing_keys < <(python3 - "$SIM_RESULTS_FILE" <<'PY'
+  mapfile -t existing_keys < <(python3 - <<'PY' "$SIM_RESULTS_FILE"
 import json
 import sys
 from pathlib import Path
@@ -33,7 +33,7 @@ for entry in data:
     if not isinstance(entry, dict):
         continue
     try:
-        key = f"{int(entry['P'])}-{int(entry['M'])}-{int(entry['K'])}-{int(entry['N'])}-{int(entry['L'])}-{int(entry['C'])}"
+        key = f"{int(entry['P'])}-{int(entry['M'])}-{int(entry['K'])}-{int(entry['L'])}-{int(entry['R'])}"
     except (KeyError, ValueError, TypeError):
         continue
     print(key)
@@ -46,39 +46,25 @@ PY
   done
 fi
 
-M_eq_N=${1:-false}
-if [[ "$M_eq_N" != "true" && "$M_eq_N" != "false" ]]; then
-  echo "Usage: $0 [true|false]"
-  exit 1
-fi
-
 P_VALUES=(3 6 9)
 M_FACTORS=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
 L_VALUES=(0 1 2)
-C_VALUES=(0 1)
+R_VALUES=(0 1 2)
 
 for P in "${P_VALUES[@]}"; do
   base_dim=$((P * 8))
   for factor in "${M_FACTORS[@]}"; do
-    #if [[ "$M_eq_N" == true && $((factor % 8)) -ne 0 ]]; then
-    #  continue  # skip if M_eq_N=true but factor is not multiple of 8
-    #fi
     M=$((P * factor))
     K=2
-    if [ "$M_eq_N" = true ]; then
-      N=$M
-    else
-      N=$base_dim
-    fi
     L=1
-    C=1
-    config_key="${P}-${M}-${K}-${N}-${L}-${C}"
+    R=1
+    config_key="${P}-${M}-${K}-${L}-${R}"
     if [[ -v existing_config_map["$config_key"] ]]; then
-      echo "Skipping run_sim.sh P=$P M=$M K=$K N=$N L=$L C=$C (already recorded in ${SIM_RESULTS_FILE})"
+      echo "Skipping run_sim.sh P=$P M=$M K=$K L=$L R=$R (already recorded in ${SIM_RESULTS_FILE})"
       continue
     fi
-    echo "Running run_sim.sh P=$P M=$M K=$K N=$N L=$L C=$C"
-    bash run_sim.sh "$P" "$M" "$K" "$N" "$L" "$C"
-    rm -rf wio_flows_tmpdir.*
+
+    echo "Running run_sim.sh P=$P M=$M K=$K L=$L R=$R"
+    bash run_sim.sh "$P" "$M" "$K" "$L" "$R"
   done
 done

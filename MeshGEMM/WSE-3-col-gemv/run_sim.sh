@@ -18,15 +18,11 @@ L=$5 # if 5 args are given, use the 5th as L, else default to 1
 if [ -z "$L" ]; then
   L=1
 fi
-C=$6 # if 6 args are given, use the 6th as C, else default to 1
-if [ -z "$C" ]; then
-  C=1
-fi
 
-echo "P=$1, M=$2, K=$3, N=$4, Mt=$Mt, Kt=$Kt, Nt=$Nt, L=$L, C=$C"
+echo "P=$1, M=$2, K=$3, N=$4, Mt=$Mt, Kt=$Kt, Nt=$Nt, L=$L"
 
 cslc --arch=wse3 ./src/layout.csl --fabric-dims="$fabric_w","$fabric_h" --fabric-offsets=4,1 \
-    --params=P:"$1",Mt:"$Mt",Kt:"$Kt",Nt:"$Nt",L:"$L",C:"$C" \
+    --params=P:"$1",Mt:"$Mt",Kt:"$Kt",Nt:"$Nt",L:"$L" \
     -o out --memcpy --channels 1
 
-cs_python ./launch_sim.py --P "$1" --M "$2" --K "$3" --N "$4" --L "$L" --C "$C"
+cs_python ./launch_sim.py --P "$1" --M "$2" --K "$3" --N "$4" --L "$L"

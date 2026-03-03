@@ -1,6 +1,7 @@
 param P: i16;
 param Mt: i16;
 param Nt: i16;
+param L: i16;
 
 param pe_num_group: i16;
 
@@ -62,7 +63,7 @@ layout {
                 .comm_params = @concat_structs(@concat_structs(comm_even, reduce_2nd_params), .{
                     .up_bd_color = C_U_B, .down_bd_color = C_D_B,
                 }),
-                .P = P, .Mt = Mt, .Nt = Nt, .pe_num_group = pe_num_group,
+                .P = P, .Mt = Mt, .Nt = Nt, .L = L, .pe_num_group = pe_num_group,
                 .root_1st_phase = root_1st_phase, .root_2nd_phase = root_2nd_phase,
             });
 
@@ -122,7 +123,7 @@ layout {
                 .comm_params = @concat_structs(@concat_structs(comm_odd, reduce_2nd_params), .{
                     .up_bd_color = C_U_B, .down_bd_color = C_D_B,
                 }),
-                .P = P, .Mt = Mt, .Nt = Nt, .pe_num_group = pe_num_group,
+                .P = P, .Mt = Mt, .Nt = Nt, .L = L, .pe_num_group = pe_num_group,
                 .root_1st_phase = root_1st_phase, .root_2nd_phase = root_2nd_phase,
             });
 

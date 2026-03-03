@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument("--K", required=True, type=int, help="Word vector dimension")
     parser.add_argument("--N", required=True, type=int, help="Output dimension")
     parser.add_argument("--L", required=False, type=int, default=1, help="Computation Loop to help Benchmarking")
+    parser.add_argument("--C", required=False, type=int, default=1, help="Communication Loop to help Benchmarking")
 
     args = parser.parse_args()
     return args
@@ -82,6 +83,7 @@ def main():
     N = orig_N
 
     L = args.L
+    C = args.C
 
     Mt = math.ceil(M / P)
     Kt = math.ceil(K / P)
@@ -110,10 +112,11 @@ def main():
         and entry.get("M") == M
         and entry.get("K") == K
         and entry.get("N") == N
-        and entry.get("L") == L
+        and entry.get("L", 1) == L
+        and entry.get("C", 1) == C
         for entry in existing_results
     ):
-        print(f"Result for P={P}, M={M}, K={K}, N={N}, L={L} already exists. Skipping simulation.")
+        print(f"Result for P={P}, M={M}, K={K}, N={N}, L={L}, C={C} already exists. Skipping simulation.")
         return
 
     io_dtype = MemcpyDataType.MEMCPY_16BIT
@@ -245,20 +248,21 @@ def main():
     max_time_end = time_end.max()
 
     print(f"\nRepeat count: {total_repeat_times}")
-    print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}")
+    print(f"P: {P}, M: {M}, K: {K}, N: {N}, fmach computation loop: {L}, two hop communication loop: {C}")
     print(f"Mean cycle count: {np.mean(time_end - time_start)/total_repeat_times}")
     print(f"Max Cycle count: {(max_time_end - min_time_start)/total_repeat_times}")
 
-    result_entry = {"P": P, "M": M, "K": K, "N": N, "L": L, "mean_cycle": np.mean(time_end - time_start)/total_repeat_times,}
+    result_entry = {"P": P, "M": M, "K": K, "N": N, "L": L, "C": C, "mean_cycle": np.mean(time_end - time_start)/total_repeat_times,}
 
     existing_results.append(result_entry)
     existing_results.sort(
         key=lambda entry: (
-            entry.get("P", 0),
-            entry.get("M", 0),
-            entry.get("K", 0),
-            entry.get("N", 0),
-            entry.get("L", 0),
+            entry.get("P"),
+            entry.get("M"),
+            entry.get("K"),
+            entry.get("N"),
+            entry.get("L", 1),
+            entry.get("C", 1),
         )
     )
     with file_path.open("w") as f:

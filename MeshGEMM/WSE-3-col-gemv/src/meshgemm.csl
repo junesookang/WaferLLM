@@ -7,7 +7,6 @@ param Mt: i16;
 param Kt: i16;
 param Nt: i16;
 param L: i16;
-param C: i16;
 
 // ---------------------- Input Matrix ------------------------ //
 
@@ -19,7 +18,7 @@ var X_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> X_0_tile[i] });
 var W_0_tile: [Kt*Nt]f16 = @zeros([Kt*Nt]f16);
 var W_1_tile: [Kt*Nt]f16 = @zeros([Kt*Nt]f16);
 var ptr_W: [*]f16 = &W_0_tile;
-var W_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Nt} -> W_0_tile[i] });
+var W_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Kt} -> W_0_tile[i] });
 
 // ---------------------- Output Matrix ----------------------- //
 
@@ -118,7 +117,7 @@ task next_step() void {
     mm_compute();
 }
 
-fn gemv_static_step_X(curW: f16) void {
+fn gemv_static_step_W(curW: f16) void {
     @fmach(out_dest_dsr, out_src0_dsr, X_src1_dsr, curW);
 }
 
@@ -134,31 +133,27 @@ fn mm_compute() void {
 
     if (step < P) {
 
-        if (C == 0) {
-            @unblock(next_step_id);
-        } else {
-            comm_mod.two_hop_comm(ptr_X_send, ptr_W_send, ptr_X_recv, ptr_W_recv);
-        }
+        comm_mod.two_hop_comm(ptr_X_send, ptr_W_send, ptr_X_recv, ptr_W_recv);
         // @unblock(next_step_id);
 
         for (@range(i16, L)) |l| {
             X_dsd = @set_dsd_base_addr(X_dsd, ptr_X_send);
             W_dsd = @set_dsd_base_addr(W_dsd, ptr_W_send);
+            out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
 
             X_dsd = @set_dsd_length(X_dsd, @bitcast(u16, Mt));
-            W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Nt));
+            W_dsd = @set_dsd_length(W_dsd, @bitcast(u16, Kt));
+            out_dsd = @set_dsd_length(out_dsd, @bitcast(u16, Mt));
 
-            for (@range(i16, Kt)) |k| {
+            for (@range(i16, Nt)) |n| {
 
-                out_dsd = @set_dsd_base_addr(out_dsd, ptr_out);
+                @load_to_dsr(out_dest_dsr, out_dsd, .{ .save_address = false });
+                @load_to_dsr(out_src0_dsr, out_dsd, .{ .save_address = false });
+                @load_to_dsr(X_src1_dsr, X_dsd, .{ .save_address = true });
+                @map(gemv_static_step_W, W_dsd);
 
-                @load_to_dsr(out_dest_dsr, out_dsd, .{ .save_address = true });
-                @load_to_dsr(out_src0_dsr, out_dsd, .{ .save_address = true });
-                @load_to_dsr(X_src1_dsr, X_dsd, .{ .save_address = false });
-                @map(gemv_static_step_X, W_dsd);
-
-                X_dsd = @increment_dsd_offset(X_dsd, Mt, f16);
-                W_dsd = @increment_dsd_offset(W_dsd, Nt, f16);
+                W_dsd = @increment_dsd_offset(W_dsd, Kt, f16);
+                out_dsd = @increment_dsd_offset(out_dsd, Mt, f16);
 
             }
         }

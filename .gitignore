@@ -1,5 +1,7 @@
 out/
 simfab_traces/
+tmp/
+*/WSE-2/*
 
 
 sim_stats.json
@@ -7,7 +9,7 @@ sim.log
 simconfig.json
 wio_flow.json
 
-sim_results.json
+*sim_results.json
 sim_result_plot.py
 
 artifact_*.json

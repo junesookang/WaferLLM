@@ -3,9 +3,9 @@ set -euo pipefail
 
 M_eq_N=${1:-false}
 
-P_VALUES=(3 6 9)
-M_FACTORS=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
-L_VALUES=(0 1 2)
+P_VALUES=(6)
+M_FACTORS=(1 2 3 4 5 6 7 8 9)
+L_VALUES=(0 1)
 
 for P in "${P_VALUES[@]}"; do
   base_dim=$((P * 8))
